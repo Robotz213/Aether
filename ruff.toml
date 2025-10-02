@@ -51,7 +51,7 @@ extend-select = [
     "RUF",
 ]
 
-ignore = ["ARG002", "FBT003", "RUF022", "D203", "D213"]
+ignore = ["ARG002", "FBT003", "RUF022", "D203", "D213", "TC003"]
 unfixable = ["B", "S", "D203", "D213", "D211"]
 
 # Allow unused variables when underscore-prefixed.

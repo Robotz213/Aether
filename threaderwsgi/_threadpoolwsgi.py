@@ -2,6 +2,7 @@
 
 import signal
 import sys
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from threading import Event
@@ -45,10 +46,11 @@ class ThreadPoolWSGIServer(WSGIServer):
         self.host = host
         self.port = port
         self.poll_interval = poll_interval
+        self.executor = ThreadPoolExecutor(max_workers=max_workers)
 
         super().__init__((host, port), WSGIRequestHandler)
         self.app = app
-        self.executor = ThreadPoolExecutor(max_workers=max_workers)
+        self.set_app(app)
 
     def process_request(self, request: object, client_address: object) -> None:
         # Rejeita novas conexões durante shutdown
@@ -70,16 +72,15 @@ class ThreadPoolWSGIServer(WSGIServer):
         try:
             self.finish_request(request, client_address)
             self.shutdown_request(request)
-        except Exception:
+        except Exception as e:
+            exc = "\n".join(traceback.format_exception(e))
+            console.log(f"[red]{exc}[/red]")
             self.handle_error(request, client_address)
             self.shutdown_request(request)
 
     def server_close(self) -> None:
         super().server_close()
         self.executor.shutdown(wait=True)
-
-    def set_app(self, application: WSGIApplication) -> None:
-        return super().set_app(application)
 
     def run(self) -> None:
         clear()

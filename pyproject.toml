@@ -14,4 +14,4 @@ dependencies = [
 
 
 [project.scripts]
-"threader-wsgi" = "threaderwsgi:_main_function"
+"threader-wsgi" = "threaderwsgi:app"

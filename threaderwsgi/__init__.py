@@ -14,8 +14,7 @@ def about() -> None:
     tqdm.write("ok")
 
 
-def _main_function() -> None:
-    return app()
+__all__ = [ThreadPoolWSGIServer, WSGIRequestHandler]
 
-
-__all__ = [ThreadPoolWSGIServer, WSGIRequestHandler, _main_function]
+if __name__ == "__main__":
+    app()

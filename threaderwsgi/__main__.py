@@ -1,5 +1,5 @@
 """Empt."""
 
-from threaderwsgi import _main_function
+from threaderwsgi import app
 
-__all__ = ["_main_function"]
+__all__ = ["app"]

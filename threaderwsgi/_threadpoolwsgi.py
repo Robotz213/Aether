@@ -138,7 +138,3 @@ class ThreadPoolWSGIServer(WSGIServer):
 
 
 make_server = ThreadPoolWSGIServer._make_server
-
-
-with ThreadPoolWSGIServer("localhost", 8000) as server:
-    server.run()

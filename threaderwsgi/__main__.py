@@ -1,7 +1,5 @@
 """Empt."""
 
-import tqdm
+from threaderwsgi import _main_function
 
-
-def _main_function() -> None:
-    tqdm.tqdm.write("ok")
+__all__ = ["_main_function"]

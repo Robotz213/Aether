@@ -1,9 +1,9 @@
 """Empt."""
 
-from threaderwsgi.main import typer_app
+from threaderwsgi.main import app
 
-__all__ = ["typer_app"]
+__all__ = [app]
 
 
 if __name__ == "__main__":
-    typer_app()
+    app()

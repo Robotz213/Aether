@@ -4,10 +4,11 @@ from typer import Typer
 app = Typer(name="TheaderWSGI")
 
 
-@app.command(name="about")
-def about() -> None:
+@app.command(name="teste")
+def teste() -> None:
     print("ok")
 
 
-def typer_app() -> object:
-    return app()
+@app.command(name="teste2")
+def teste2() -> None:
+    print("ok")

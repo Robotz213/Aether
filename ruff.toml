@@ -1,0 +1,106 @@
+preview = true
+extend-include = ["*.ipynb"]
+line-length = 79
+indent-width = 4
+
+[lint]
+select = ["A", "B", "C", "D", "E", "F", "G", "I", "N", "Q", "S", "T", "W"]
+
+extend-select = [
+    "ANN",
+    "ASYNC",
+    "COM",
+    "EXE",
+    "PYI",
+    "PT",
+    "RSE",
+    "ISC",
+    "ICN",
+    "LOG",
+    "PIE",
+    "SLF",
+    "SLOT",
+    "PGH",
+    "INT",
+    "TD",
+    "FIX",
+    "NPY",
+    "INP",
+    "UP",
+    "RET",
+    "BLE",
+    "FBT",
+    # "CPY",
+    "DTZ",
+    "EM",
+    "FA",
+    "SIM",
+    "TID",
+    "TC",
+    "ARG",
+    "PTH",
+    "ERA",
+    # "PD",
+    # "PL",
+    "TRY",
+    "FLY",
+    "AIR",
+    "PERF",
+    "FURB",
+    "DOC",
+    "RUF",
+]
+
+ignore = ["ARG002", "FBT003", "RUF022", "D203", "D213"]
+unfixable = ["B", "S", "D203", "D213", "D211"]
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[lint.extend-per-file-ignores]
+"**/{tests,docs,tools}/*" = ["E402", "S", "D100", "D104", "ANN", "D417", "N818"]
+"*" = [
+    "A004",
+    "B026",
+    "FIX",
+    "D102",
+    "ARG001",
+    "ANN003",
+    "ANN002",
+    "E501",
+    "BLE001",
+    "SLF001",
+    "N815",
+    "S603",
+    "S404",
+    "PTH107",
+    "PERF203",
+    "S105",
+]
+
+[format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+# Enable auto-formatting of code examples in docstrings. Markdown,
+# reStructuredText code/literal blocks and doctests are all supported.
+#
+# This is currently disabled by default, but it is planned for this
+# to be opt-out in the future.
+docstring-code-format = true
+
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+#
+# This only has an effect when the `docstring-code-format` setting is
+# enabled.
+docstring-code-line-length = "dynamic"

@@ -1,0 +1,12 @@
+[project]
+name = "threaderwsgi"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "clear>=2.0.0",
+    "rich>=14.1.0",
+    "termcolor>=3.1.0",
+    "tqdm>=4.67.1",
+]

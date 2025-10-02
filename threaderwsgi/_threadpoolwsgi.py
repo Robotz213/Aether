@@ -1,0 +1,144 @@
+"""Threaded WSGI Server com graceful shutdown."""
+
+import signal
+import sys
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import suppress
+from threading import Event
+from typing import ClassVar, Self
+from wsgiref.simple_server import WSGIServer
+from wsgiref.types import WSGIApplication
+
+from clear import clear
+from rich.console import Console
+from rich.panel import Panel
+
+from threaderwsgi._requesthandlerwsgi import WSGIRequestHandler
+from threaderwsgi._types import Host, Port
+
+sigint_count = 0
+console = Console()
+
+
+class ThreadPoolWSGIServer(WSGIServer):
+    """Servidor WSGI ThreadBased com ThreadPoolExecutor."""
+
+    _shutdown_event: ClassVar[Event] = Event()
+
+    @property
+    def shutdown_event(self) -> Event:
+        return self._shutdown_event
+
+    @shutdown_event.setter
+    def shutdown_event(self, event: Event) -> None:
+        self._shutdown_event = event
+
+    def __init__(
+        self,
+        host: Host,
+        port: Port,
+        app: WSGIApplication | None = None,
+        poll_interval: float = 0.5,
+        max_workers: int = 10,
+    ) -> None:
+        """Servidor WSGI com ThreadPoolExecutor."""
+        self.host = host
+        self.port = port
+        self.poll_interval = poll_interval
+
+        super().__init__((host, port), WSGIRequestHandler)
+        self.app = app
+        self.executor = ThreadPoolExecutor(max_workers=max_workers)
+
+    def process_request(self, request: object, client_address: object) -> None:
+        # Rejeita novas conexões durante shutdown
+        if self.shutdown_event.is_set():
+            request.close()
+            return
+
+        self.executor.submit(
+            self.__handle_request,
+            request,
+            client_address,
+        )
+
+    def __handle_request(
+        self,
+        request: object,
+        client_address: object,
+    ) -> None:
+        try:
+            self.finish_request(request, client_address)
+            self.shutdown_request(request)
+        except Exception:
+            self.handle_error(request, client_address)
+            self.shutdown_request(request)
+
+    def server_close(self) -> None:
+        super().server_close()
+        self.executor.shutdown(wait=True)
+
+    def set_app(self, application: WSGIApplication) -> None:
+        return super().set_app(application)
+
+    def run(self) -> None:
+        clear()
+        panel = Panel.fit(
+            title="[bold cyan]Threaded WSGI Server",
+            renderable=f"[cyan]Servidor rodando em [bold white]http://{self.host}:{self.port}[/bold white]",
+            subtitle="[bold green]Pressione Ctrl+C para iniciar o graceful shutdown[/bold green]",
+            border_style="bright_blue",
+            width=300,
+        )
+        console.log(panel)
+
+        with suppress(KeyboardInterrupt):
+            while not self.shutdown_event.is_set():
+                self.serve_forever()
+
+    def __enter__(self) -> Self:
+        with suppress(Exception):
+            return self
+
+    def __exit__(self, *args: object, **kwargs: object) -> None:
+        with suppress(Exception):
+            return super().server_close()
+
+    @classmethod
+    def _make_server(
+        cls,
+        host: Host,
+        port: Port,
+        app: WSGIApplication,
+    ) -> Self:
+        """Create a new WSGI server listening on `host` and `port` for `app`.
+
+        Returns:
+            server: WSGI Server.
+
+        """
+        server = cls(host=host, port=port)
+        signal.signal(signal.SIGINT, server._handle_sigint)
+
+        server.set_app(app)
+        return server
+
+    def _handle_sigint(self, signum: int, frame: object) -> None:
+        global sigint_count
+        sigint_count += 1
+
+        if sigint_count == 1:
+            msg = "\n[INFO] Ctrl+C detectado (SIGINT 1x): iniciando graceful shutdown. Pressione Ctrl+C novamente para forçar cold shutdown."
+            console.log(msg)
+            self.shutdown_event.set()  # Sinaliza para o servidor parar de aceitar novas conexões
+        elif sigint_count == 2:
+            msg = "\n[WARN] Ctrl+C pressionado novamente (SIGINT 2x): cold shutdown! Encerrando imediatamente."
+            console.log(msg)
+            sys.exit(1)
+
+
+make_server = ThreadPoolWSGIServer._make_server
+
+
+with ThreadPoolWSGIServer("localhost", 8000) as server:
+    server.run()

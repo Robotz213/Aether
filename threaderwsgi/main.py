@@ -9,5 +9,5 @@ def about() -> None:
     print("ok")
 
 
-if __name__ == "__main__":
-    app()
+def typer_app() -> object:
+    return app()

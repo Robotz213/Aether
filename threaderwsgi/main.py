@@ -28,6 +28,10 @@ def _runapp(host: Host, port: Port, app: str) -> None:
 
             app_instance = getattr(app_module, app_name)
 
+            if "create_app" in dir(app_module):
+                app_name = "create_app"
+                app_instance = getattr(app_module, app_name)
+
             if app_name != "app" and callable(app_instance):
                 app_instance = app_instance()
 

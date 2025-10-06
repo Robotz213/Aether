@@ -7,7 +7,7 @@ import sys
 import traceback
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import suppress
-from multiprocessing import Event
+from multiprocessing import Event, Lock
 from typing import TYPE_CHECKING, ClassVar, Self
 from wsgiref.simple_server import WSGIServer
 from wsgiref.types import WSGIApplication
@@ -16,15 +16,17 @@ from clear import clear
 from rich.console import Console
 from rich.panel import Panel
 
-from threaderwsgi._requesthandlerwsgi import WSGIRequestHandler
+from aether._requesthandlerwsgi import WSGIRequestHandler
 
 if TYPE_CHECKING:
     from multiprocessing.synchronize import Event as SyncEvent
 
-    from threaderwsgi._types import Host, Port
+    from aether._types import Host, Port
 
 sigint_count = 0
 console = Console()
+
+with_gil = sys._is_gil_enabled() if hasattr(sys, "_is_gil_enabled") else True
 
 
 class ProcessPoolWSGIServer(WSGIServer):
@@ -60,15 +62,28 @@ class ProcessPoolWSGIServer(WSGIServer):
 
     def process_request(self, request: object, client_address: object) -> None:
         # Rejeita novas conexões durante shutdown
-        if self.shutdown_event.is_set():
-            request.close()
-            return
+        if not with_gil:
+            with Lock():
+                if self.shutdown_event.is_set():
+                    request.close()
+                    return
 
-        self.executor.submit(
-            self.__handle_request,
-            request,
-            client_address,
-        )
+                self.executor.submit(
+                    self.__handle_request,
+                    request,
+                    client_address,
+                )
+
+        else:
+            if self.shutdown_event.is_set():
+                request.close()
+                return
+
+            self.executor.submit(
+                self.__handle_request,
+                request,
+                client_address,
+            )
 
     def __handle_request(
         self,

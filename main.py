@@ -1,5 +1,5 @@
 def main():
-    print("Hello from threaderwsgi!")
+    print("Hello from aether!")
 
 
 if __name__ == "__main__":

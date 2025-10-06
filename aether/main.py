@@ -1,4 +1,4 @@
-"""ThreaderWSGI main entry point."""
+"""AetherWSGI main entry point."""
 
 import platform
 from contextlib import suppress
@@ -9,11 +9,11 @@ from wsgiref.types import WSGIApplication
 from rich import print
 from typer import Argument, Typer
 
-from threaderwsgi._processpoolwsgi import ProcessPoolWSGIServer
-from threaderwsgi._threadpoolwsgi import ThreadPoolWSGIServer
-from threaderwsgi._types import Host, Port
+from aether._processpoolwsgi import ProcessPoolWSGIServer
+from aether._threadpoolwsgi import ThreadPoolWSGIServer
+from aether._types import Host, Port
 
-th = Typer(name="TheaderWSGI")
+at = Typer(name="AetherWSGI Threaded WSGI Server", rich_markup_mode="rich")
 
 
 def _runapp(host: Host, port: Port, app: str) -> None:
@@ -26,7 +26,7 @@ def _runapp(host: Host, port: Port, app: str) -> None:
                 __package__,
             )
 
-            app_instance = getattr(app_module, app_name, default=None)
+            app_instance = getattr(app_module, app_name, None)
 
             if "create_app" in dir(app_module):
                 app_name = "create_app"
@@ -41,7 +41,7 @@ def _runapp(host: Host, port: Port, app: str) -> None:
         print(f"[red]Error:[/red] Module '{module_name}' not found.")
 
 
-@th.command(name="run")
+@at.command(name="run")
 def run(
     app: Annotated[
         str,
@@ -60,7 +60,7 @@ def run(
     _runapp(host, port, app)
 
 
-@th.command(name="serve", deprecated=True)
+@at.command(name="serve", deprecated=True)
 def serve(
     app: Annotated[
         str,
@@ -81,7 +81,7 @@ def serve(
 
 if platform.system() == "Linux":
 
-    @th.command(name="runserver")
+    @at.command(name="runserver")
     def runserver(
         app: str = "app:app",
         host: str = "localhost",

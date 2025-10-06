@@ -1,5 +1,5 @@
 [project]
-name = "threaderwsgi"
+name = "aether"
 version = "0.0.1.dev0"
 description = "Add your description here"
 readme = "README.md"
@@ -14,4 +14,4 @@ dependencies = [
 
 
 [project.scripts]
-"threader-wsgi" = "threaderwsgi.main:th"
+"at" = "aether.main:at"

@@ -1,7 +1,7 @@
 """Empt."""
 
-from threaderwsgi.main import app
+from threaderwsgi.main import th
 
-__all__ = [app]
+__all__ = [th]
 if __name__ == "__main__":
-    app()  # pragma: no cover
+    th()

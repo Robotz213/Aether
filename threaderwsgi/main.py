@@ -48,7 +48,7 @@ def serve(
 
             app_instance = getattr(app_module, app_name)
 
-            if callable(app_instance):
+            if app_name != "app" and callable(app_instance):
                 app_instance = app_instance()
 
             ThreadPoolWSGIServer(host=host, port=port, app=app_instance).run()

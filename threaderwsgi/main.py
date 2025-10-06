@@ -26,7 +26,7 @@ def _runapp(host: Host, port: Port, app: str) -> None:
                 __package__,
             )
 
-            app_instance = getattr(app_module, app_name)
+            app_instance = getattr(app_module, app_name, default=None)
 
             if "create_app" in dir(app_module):
                 app_name = "create_app"

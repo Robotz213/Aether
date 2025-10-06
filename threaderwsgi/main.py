@@ -1,5 +1,6 @@
 """ThreaderWSGI main entry point."""
 
+import platform
 from contextlib import suppress
 from importlib import import_module
 from wsgiref.types import WSGIApplication
@@ -7,6 +8,7 @@ from wsgiref.types import WSGIApplication
 from rich import print
 from typer import Typer
 
+from threaderwsgi._processpoolwsgi import ProcessPoolWSGIServer
 from threaderwsgi._threadpoolwsgi import ThreadPoolWSGIServer
 
 app = Typer(name="TheaderWSGI")
@@ -25,7 +27,7 @@ def run(
 
         app_instance = getattr(app_module, app_name)
 
-        if callable(app_instance):
+        if app_name != "app" and callable(app_instance):
             app_instance = app_instance()
 
         ThreadPoolWSGIServer(host=host, port=port, app=app_instance).run()
@@ -53,3 +55,24 @@ def serve(
             return
 
         print(f"[red]Error:[/red] Module '{module_name}' not found.")
+
+
+if platform.system() == "Linux":
+
+    @app.command(name="runserver")
+    def runserver(
+        app: str = "app:app",
+        host: str = "localhost",
+        port: int = 5000,
+    ) -> None:
+        """Executa o servidor WSGI com ProcessPool."""
+        if ":" in app:
+            module_name, app_name = app.split(":", 1)
+            app_module: WSGIApplication = import_module(module_name)
+
+            app_instance = getattr(app_module, app_name)
+
+            if app_name != "app" and callable(app_instance):
+                app_instance = app_instance()
+
+            ProcessPoolWSGIServer(host=host, port=port, app=app_instance).run()

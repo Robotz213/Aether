@@ -10,6 +10,7 @@ from typing import ClassVar, Self
 from wsgiref.simple_server import WSGIServer
 from wsgiref.types import WSGIApplication
 
+import rich
 from clear import clear
 from rich.console import Console
 from rich.panel import Panel
@@ -34,7 +35,7 @@ class ThreadPoolWSGIServer(WSGIServer):
 
     @shutdown_event.setter
     def shutdown_event(self, event: Event) -> None:
-        self._shutdown_event = event
+        self._shutdown_event = event  # pyright: ignore[reportAttributeAccessIssue]
 
     def __init__(
         self,
@@ -60,7 +61,7 @@ class ThreadPoolWSGIServer(WSGIServer):
         if not with_gil:
             with Lock():
                 if self.shutdown_event.is_set():
-                    request.close()
+                    request.close()  # pyright: ignore[reportAttributeAccessIssue]
                     return
 
                 self.executor.submit(
@@ -71,7 +72,7 @@ class ThreadPoolWSGIServer(WSGIServer):
 
         else:
             if self.shutdown_event.is_set():
-                request.close()
+                request.close()  # pyright: ignore[reportAttributeAccessIssue]
                 return
 
             self.executor.submit(
@@ -86,13 +87,13 @@ class ThreadPoolWSGIServer(WSGIServer):
         client_address: object,
     ) -> None:
         try:
-            self.finish_request(request, client_address)
-            self.shutdown_request(request)
+            self.finish_request(request, client_address)  # pyright: ignore[reportArgumentType]
+            self.shutdown_request(request)  # pyright: ignore[reportArgumentType]
         except Exception as e:
             exc = "\n".join(traceback.format_exception(e))
             console.log(f"[red]{exc}[/red]")
-            self.handle_error(request, client_address)
-            self.shutdown_request(request)
+            self.handle_error(request, client_address)  # pyright: ignore[reportArgumentType]
+            self.shutdown_request(request)  # pyright: ignore[reportArgumentType]
 
     def server_close(self) -> None:
         super().server_close()
@@ -103,17 +104,19 @@ class ThreadPoolWSGIServer(WSGIServer):
         panel = Panel.fit(
             title="[bold cyan]Threaded WSGI Server",
             renderable=f"[cyan]Servidor rodando em [bold white]http://{self.host}:{self.port}[/bold white]",
-            subtitle="[bold green]Pressione Ctrl+C para iniciar o graceful shutdown[/bold green]",
             border_style="bright_blue",
-            width=300,
         )
-        console.log(panel)
+
+        rich.print(panel)
+        rich.print(
+            "[bold green]Pressione Ctrl+C para iniciar o graceful shutdown[/bold green]",
+        )
 
         with suppress(KeyboardInterrupt):
             while not self.shutdown_event.is_set():
                 self.serve_forever()
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> Self:  # pyright: ignore[reportReturnType]
         with suppress(Exception):
             return self
 

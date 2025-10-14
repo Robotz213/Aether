@@ -15,3 +15,7 @@ dependencies = [
 
 [project.scripts]
 "at" = "aether.main:at"
+
+
+[tool.uv]
+package = true

@@ -3,17 +3,18 @@
 import signal
 import sys
 import traceback
-from concurrent.futures import ThreadPoolExecutor
+from collections import UserList
+from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import suppress
-from threading import Event, Lock
+from threading import Event
 from typing import ClassVar, Self
-from wsgiref.simple_server import WSGIServer
 from wsgiref.types import WSGIApplication
 
 import rich
 from clear import clear
 from rich.console import Console
 from rich.panel import Panel
+from werkzeug.serving import ThreadedWSGIServer
 
 from aether._requesthandlerwsgi import WSGIRequestHandler
 from aether._types import Host, Port
@@ -24,10 +25,31 @@ console = Console()
 with_gil = sys._is_gil_enabled() if hasattr(sys, "_is_gil_enabled") else True
 
 
-class ThreadPoolWSGIServer(WSGIServer):
+class _Futures(UserList[Future]):
+    """Joinable list of all non-daemon threads."""
+
+    def append(self, thread: Future) -> None:
+        self.reap()
+        super().append(thread)
+
+    def pop_all(self) -> Self:
+        self[:], futures = [], self[:]
+        return futures
+
+    def join(self) -> None:
+        for future in self.pop_all():
+            future.result()
+
+    def reap(self) -> None:
+        self[:] = (future for future in self if future.running())
+
+
+class ThreadPoolWSGIServer(ThreadedWSGIServer):
     """Servidor WSGI ThreadBased com ThreadPoolExecutor."""
 
     _shutdown_event: ClassVar[Event] = Event()
+
+    _futures = _Futures()
 
     @property
     def shutdown_event(self) -> Event:
@@ -51,35 +73,22 @@ class ThreadPoolWSGIServer(WSGIServer):
         self.poll_interval = poll_interval
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
 
-        super().__init__((host, port), WSGIRequestHandler)
-        self.app = app
-        self.set_app(app)
+        super().__init__(host, port, app, WSGIRequestHandler)  # pyright: ignore[reportArgumentType]
 
     def process_request(self, request: object, client_address: object) -> None:
         # Rejeita novas conexões durante shutdown
 
-        if not with_gil:
-            with Lock():
-                if self.shutdown_event.is_set():
-                    request.close()  # pyright: ignore[reportAttributeAccessIssue]
-                    return
+        if self.shutdown_event.is_set():
+            request.close()  # pyright: ignore[reportAttributeAccessIssue]
+            return
 
-                self.executor.submit(
-                    self.__handle_request,
-                    request,
-                    client_address,
-                )
-
-        else:
-            if self.shutdown_event.is_set():
-                request.close()  # pyright: ignore[reportAttributeAccessIssue]
-                return
-
+        self._futures.append(
             self.executor.submit(
                 self.__handle_request,
                 request,
                 client_address,
-            )
+            ),
+        )
 
     def __handle_request(
         self,
@@ -130,6 +139,8 @@ class ThreadPoolWSGIServer(WSGIServer):
         host: Host,
         port: Port,
         app: WSGIApplication,
+        pool_interval: float = 0.5,
+        max_workers: int = 10,
     ) -> Self:
         """Create a new WSGI server listening on `host` and `port` for `app`.
 
@@ -137,10 +148,15 @@ class ThreadPoolWSGIServer(WSGIServer):
             server: WSGI Server.
 
         """
-        server = cls(host=host, port=port)
+        server = cls(
+            host=host,
+            port=port,
+            app=app,
+            poll_interval=pool_interval,
+            max_workers=max_workers,
+        )
         signal.signal(signal.SIGINT, server._handle_sigint)
 
-        server.set_app(app)
         return server
 
     def _handle_sigint(self, signum: int, frame: object) -> None:

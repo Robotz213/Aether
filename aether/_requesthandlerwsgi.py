@@ -1,7 +1,6 @@
-from wsgiref.simple_server import WSGIRequestHandler as BaseHTTPRequestHandler
+from werkzeug.serving import WSGIRequestHandler as WerkzeugWSGIRequestHandler
 
 __version__ = "0.1"
 
 
-class WSGIRequestHandler(BaseHTTPRequestHandler):
-    server_version = "WSGIServer/" + __version__
+class WSGIRequestHandler(WerkzeugWSGIRequestHandler): ...
